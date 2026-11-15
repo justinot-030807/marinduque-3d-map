@@ -6,8 +6,8 @@ const SKY_TOP = new THREE.Color(0x7ac3e8);
 const SKY_HORIZON = new THREE.Color(0xd5eef8);
 const SUN_DIRECTION = new THREE.Vector3(68, 62, 46);
 
-const PAN_LIMIT_XZ = 46;
-const PAN_LIMIT_Y = 12;
+const PAN_LIMIT_XZ = 49;
+const PAN_LIMIT_Y = 14;
 
 export function createSceneController(canvas) {
   const renderer = new THREE.WebGLRenderer({

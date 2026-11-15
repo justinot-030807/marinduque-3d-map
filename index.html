@@ -47,17 +47,17 @@
         </div>
       </div>
 
-      <!-- Top HUD bar: Brand + Category Filters + Top Picks Tour CTA -->
+      <!-- Top HUD bar: Brand + Category Filters + Explorer & Tour Actions -->
       <header class="hud-top">
         <div class="brand-card">
           <h1 class="brand-title">Marinduque</h1>
-          <p class="brand-subtitle">Real Relief &amp; Travel Atlas</p>
+          <p class="brand-subtitle">3D Relief &amp; Travel Atlas</p>
         </div>
 
         <nav id="filter-bar" class="filter-bar" aria-label="Spot category filters">
           <button type="button" class="filter-chip is-active" data-filter="all" aria-pressed="true">
             <span>All</span>
-            <span class="chip-count" data-count-for="all">9</span>
+            <span class="chip-count" data-count-for="all">16</span>
           </button>
           <button type="button" class="filter-chip" data-filter="Beaches & Islands" aria-pressed="false">
             <span>Beaches &amp; Islands</span>
@@ -65,21 +65,90 @@
           </button>
           <button type="button" class="filter-chip" data-filter="Peaks & Nature" aria-pressed="false">
             <span>Peaks &amp; Nature</span>
-            <span class="chip-count" data-count-for="Peaks & Nature">3</span>
+            <span class="chip-count" data-count-for="Peaks & Nature">6</span>
           </button>
           <button type="button" class="filter-chip" data-filter="Heritage & Events" aria-pressed="false">
             <span>Heritage &amp; Events</span>
-            <span class="chip-count" data-count-for="Heritage & Events">2</span>
+            <span class="chip-count" data-count-for="Heritage & Events">6</span>
           </button>
         </nav>
 
-        <button id="tour-toggle-btn" type="button" class="tour-cta" aria-pressed="false">
-          <svg class="tour-cta-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-            <polygon points="5.5,3.5 14.5,9 5.5,14.5" fill="currentColor" />
-          </svg>
-          <span>Top Picks Tour</span>
-        </button>
+        <div class="hud-actions">
+          <button
+            id="places-toggle-btn"
+            type="button"
+            class="places-btn"
+            aria-expanded="false"
+            aria-controls="places-drawer"
+          >
+            <svg class="places-btn-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+              <path d="M3.5 5h11M3.5 9h11M3.5 13h7.5" />
+            </svg>
+            <span class="places-btn-text">Places</span>
+            <span id="places-count-badge" class="places-badge">16</span>
+          </button>
+
+          <button id="tour-toggle-btn" type="button" class="tour-cta" aria-pressed="false">
+            <svg class="tour-cta-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <polygon points="5.5,3.5 14.5,9 5.5,14.5" fill="currentColor" />
+            </svg>
+            <span class="tour-cta-label">Top Picks<span class="tour-cta-word"> Tour</span></span>
+          </button>
+        </div>
       </header>
+
+      <!-- Searchable Places Explorer Drawer -->
+      <aside
+        id="places-drawer"
+        class="places-drawer"
+        role="dialog"
+        aria-modal="false"
+        aria-label="Explore Marinduque destinations"
+        hidden
+      >
+        <div class="places-drawer-header">
+          <div>
+            <h2 class="places-drawer-title">Destinations Directory</h2>
+            <p id="places-summary" class="places-drawer-sub">16 curated relief spots · 6 towns</p>
+          </div>
+          <button id="places-close-btn" type="button" class="drawer-close-btn" aria-label="Close directory">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M4.5 4.5l9 9M13.5 4.5l-9 9" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="places-search-wrap">
+          <svg class="places-search-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+            <circle cx="8" cy="8" r="5" />
+            <path d="M12 12l3.4 3.4" />
+          </svg>
+          <input
+            id="places-search"
+            class="places-search-input"
+            type="search"
+            placeholder="Search beaches, caves, shrines, towns…"
+            autocomplete="off"
+          />
+          <button id="places-search-clear" type="button" class="places-search-clear" aria-label="Clear search" hidden>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        <div id="places-muni-rail" class="places-muni-rail" role="tablist" aria-label="Filter directory by municipality">
+          <button type="button" class="muni-chip is-active" data-muni="all">All Towns</button>
+          <button type="button" class="muni-chip" data-muni="Boac">Boac</button>
+          <button type="button" class="muni-chip" data-muni="Mogpog">Mogpog</button>
+          <button type="button" class="muni-chip" data-muni="Santa Cruz">Santa Cruz</button>
+          <button type="button" class="muni-chip" data-muni="Torrijos">Torrijos</button>
+          <button type="button" class="muni-chip" data-muni="Buenavista">Buenavista</button>
+          <button type="button" class="muni-chip" data-muni="Gasan">Gasan</button>
+        </div>
+
+        <div id="places-list" class="places-list" role="list"></div>
+      </aside>
 
       <!-- Active Top Picks Tour dock -->
       <section id="tour-dock" class="tour-dock" aria-label="Guided Top Picks Tour controls" hidden>
@@ -89,7 +158,7 @@
         <div class="tour-dock-inner">
           <div class="tour-meta">
             <span class="tour-kicker">Top Picks Tour</span>
-            <span id="tour-step-label" class="tour-step-label">Stop 1 of 6</span>
+            <span id="tour-step-label" class="tour-step-label">Stop 1 of 7</span>
           </div>
           <div class="tour-controls">
             <button id="tour-prev-btn" type="button" class="tour-btn" aria-label="Previous tour stop" title="Previous stop">
@@ -179,14 +248,61 @@
           <span id="spot-elev-badge" class="hero-elev"></span>
         </div>
 
-        <div class="spot-body">
-          <div class="spot-meta-row">
-            <span id="spot-municipality"></span>
-            <span class="meta-dot" aria-hidden="true">·</span>
-            <span id="spot-coords" class="spot-coords"></span>
+        <div id="spot-body" class="spot-body">
+          <div class="spot-header-row">
+            <div class="spot-meta-row">
+              <span id="spot-municipality"></span>
+              <span class="meta-dot" aria-hidden="true">·</span>
+              <span id="spot-coords" class="spot-coords"></span>
+            </div>
+            <div class="spot-quick-actions">
+              <button id="spot-copy-coords-btn" type="button" class="spot-utility-btn" title="Copy GPS coordinates">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="5.5" y="5.5" width="7.5" height="8" rx="1.4" />
+                  <path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5.5A1.5 1.5 0 0 0 4 11h1.5" />
+                </svg>
+                <span id="spot-copy-label">GPS</span>
+              </button>
+              <a
+                id="spot-maps-link"
+                class="spot-utility-btn"
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open in Google Maps"
+              >
+                <span>Maps</span>
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M6.5 3.5h6v6M12.5 3.5L6 10M12 10.5v2a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h2" />
+                </svg>
+              </a>
+            </div>
           </div>
+
           <h2 id="spot-sheet-title" class="spot-title"></h2>
           <p id="spot-description" class="spot-description"></p>
+
+          <!-- Compact 3-column key travel specs -->
+          <div id="spot-specs" class="spot-specs" aria-label="Trip planning quick facts">
+            <div class="spot-spec">
+              <span class="spot-spec-label">Duration</span>
+              <span id="spot-duration" class="spot-spec-value"></span>
+            </div>
+            <div class="spot-spec">
+              <span class="spot-spec-label">Est. Cost</span>
+              <span id="spot-cost" class="spot-spec-value"></span>
+            </div>
+            <div class="spot-spec">
+              <span class="spot-spec-label">Nearest Hub</span>
+              <span id="spot-hub" class="spot-spec-value"></span>
+            </div>
+          </div>
+
+          <!-- Key experiences / highlights -->
+          <div id="spot-highlights-section" class="spot-highlights-section">
+            <h3 class="spot-section-kicker">What to See</h3>
+            <ul id="spot-highlights" class="spot-highlights"></ul>
+          </div>
 
           <dl class="spot-facts">
             <div class="spot-fact">
@@ -208,6 +324,15 @@
               </dt>
               <dd id="spot-best-time"></dd>
             </div>
+            <div id="spot-tips-row" class="spot-fact">
+              <dt>
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M8 2.2a4.3 4.3 0 0 1 2.7 7.65c-.55.47-.95 1.15-1 1.9H6.3c-.05-.75-.45-1.43-1-1.9A4.3 4.3 0 0 1 8 2.2zM6.4 13.6h3.2" />
+                </svg>
+                <span>Traveler tips</span>
+              </dt>
+              <dd id="spot-tips"></dd>
+            </div>
           </dl>
 
           <p id="spot-photo-credit" class="spot-credit"></p>
@@ -220,7 +345,7 @@
             </svg>
             <span>Previous</span>
           </button>
-          <span id="spot-index-counter" class="sheet-counter">1 / 9</span>
+          <span id="spot-index-counter" class="sheet-counter">1 / 16</span>
           <button id="spot-next-btn" type="button" class="sheet-nav-btn">
             <span>Next</span>
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

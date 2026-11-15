@@ -17,6 +17,7 @@ function syncSliderTrack(slider) {
 }
 
 async function init() {
+  gsap.ticker.lagSmoothing(0);
   const canvas = document.getElementById('scene-canvas');
   const overlayEl = document.getElementById('map-overlay');
   const slider = document.getElementById('exaggeration-slider');
@@ -103,11 +104,12 @@ async function init() {
 
     resetBtn.addEventListener('click', () => {
       uiCtrl.stopTour();
+      uiCtrl.closePlacesDrawer({ immediate: true });
       uiCtrl.closeSpot();
       sceneCtrl.resetView();
     });
 
-    // Dismiss active detail card when user taps cleanly on ocean / terrain without dragging
+    // Dismiss active detail card or places drawer when user taps cleanly on ocean / terrain without dragging
     let downX = 0;
     let downY = 0;
     canvas.addEventListener('pointerdown', (e) => {
@@ -116,9 +118,14 @@ async function init() {
     });
     canvas.addEventListener('pointerup', (e) => {
       const moved = Math.hypot(e.clientX - downX, e.clientY - downY);
-      if (moved < 6 && uiCtrl.getActiveSpotId()) {
-        uiCtrl.stopTour();
-        uiCtrl.closeSpot();
+      if (moved < 6) {
+        if (uiCtrl.isDrawerOpen()) {
+          uiCtrl.closePlacesDrawer();
+        }
+        if (uiCtrl.getActiveSpotId()) {
+          uiCtrl.stopTour();
+          uiCtrl.closeSpot();
+        }
       }
     });
 

@@ -33,7 +33,7 @@ function createGlowTexture() {
 
 function getPinIconMarkup(spot) {
   if (spot.isEvent) {
-    // Festive mask / calendar spark glyph for Moriones Festival
+    // Festive star emblem for cultural festival event pins
     return `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.2l1.6 3.3 3.6.5-2.6 2.5.6 3.6L8 10.4l-3.2 1.7.6-3.6L2.8 6l3.6-.5L8 2.2z"/></svg>`;
   }
   if (spot.category === 'Peaks & Nature') {
@@ -42,8 +42,8 @@ function getPinIconMarkup(spot) {
   if (spot.category === 'Heritage & Events') {
     return `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.5v3M6.5 4h3M4 13.5V7.5l4-2 4 2v6M3 13.5h10"/></svg>`;
   }
-  // Default: Beaches & Islands coastal droplet/compass gem
-  return `<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="3.4"/></svg>`;
+  // Beaches & Islands: warm sun over gentle tropical wave
+  return `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="6.2" r="2.2"/><path d="M2.2 11.4c1.5-.9 2.9-.9 4.4 0 1.5.9 2.9.9 4.4 0 .8-.5 1.5-.7 2.8-.6"/></svg>`;
 }
 
 /**
@@ -388,8 +388,17 @@ export function createPinsLayer({
       }
     }
 
-    // 3. Project municipality labels cleanly with subtle proximity fade near active pins
+    // 3. Project municipality labels cleanly with bounding-box avoidance near active pins
     if (labelsVisible) {
+      const muniOffsets = {
+        boac: { x: -40, y: -12 },
+        mogpog: { x: 18, y: -6 },
+        'santa-cruz': { x: 0, y: -10 },
+        torrijos: { x: -34, y: 18 },
+        buenavista: { x: -34, y: 12 },
+        gasan: { x: -42, y: 2 },
+      };
+
       for (const m of muniItems) {
         projVec.copy(m.worldPos).project(camera);
         const inFront = projVec.z >= -1 && projVec.z <= 1;
@@ -401,22 +410,20 @@ export function createPinsLayer({
           continue;
         }
 
-        // Shift Boac slightly northwest so it sits clearly beside Cathedral & Plaza pins
-        const tweakX = m.data.id === 'boac' ? -28 : 0;
-        const tweakY = m.data.id === 'boac' ? -18 : -12;
-        const lx = mx + tweakX;
-        const ly = my + tweakY;
+        const off = muniOffsets[m.data.id] || { x: 0, y: -12 };
+        const lx = mx + off.x;
+        const ly = my + off.y;
 
         let crowded = false;
         for (const p of activeProjected) {
-          if (Math.hypot(p.dx - lx, p.dy - ly) < 44) {
+          if (Math.abs(p.dx - lx) < 52 && Math.abs(p.dy - (ly - 8)) < 24) {
             crowded = true;
             break;
           }
         }
 
         m.el.style.transform = `translate3d(${lx.toFixed(1)}px, ${ly.toFixed(1)}px, 0) translate(-50%, -100%)`;
-        m.el.style.opacity = closeupDim || crowded ? '0.26' : '0.92';
+        m.el.style.opacity = closeupDim || crowded ? '0.46' : '0.94';
       }
     }
   }
