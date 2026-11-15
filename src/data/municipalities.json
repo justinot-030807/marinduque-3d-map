@@ -1,0 +1,39 @@
+[
+  {
+    "id": "boac",
+    "name": "Boac",
+    "tag": "Capital",
+    "lat": 13.4492,
+    "lon": 121.8372
+  },
+  {
+    "id": "mogpog",
+    "name": "Mogpog",
+    "lat": 13.4764,
+    "lon": 121.8629
+  },
+  {
+    "id": "santa-cruz",
+    "name": "Santa Cruz",
+    "lat": 13.4734,
+    "lon": 122.0284
+  },
+  {
+    "id": "torrijos",
+    "name": "Torrijos",
+    "lat": 13.3194,
+    "lon": 122.0862
+  },
+  {
+    "id": "buenavista",
+    "name": "Buenavista",
+    "lat": 13.2547,
+    "lon": 121.9436
+  },
+  {
+    "id": "gasan",
+    "name": "Gasan",
+    "lat": 13.3233,
+    "lon": 121.8459
+  }
+]

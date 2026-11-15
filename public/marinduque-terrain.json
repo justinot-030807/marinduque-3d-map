@@ -1,0 +1,45 @@
+{
+  "source": "AWS Open Data Terrain Tiles (Mapzen Terrarium)",
+  "tileUrlTemplate": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+  "zoom": 12,
+  "tileSize": 256,
+  "tiles": {
+    "xMin": 3433,
+    "xMax": 3438,
+    "yMin": 1892,
+    "yMax": 1896
+  },
+  "cropInStitched": {
+    "x": 138,
+    "y": 0,
+    "width": 1280,
+    "height": 1280
+  },
+  "outputSize": {
+    "width": 1024,
+    "height": 1024
+  },
+  "encoding": {
+    "format": "png-uint16-gray",
+    "minMeters": 0.0,
+    "maxMeters": 1172.635
+  },
+  "mercatorBounds": {
+    "xMin": 0.8382663726806641,
+    "xMax": 0.8394870758056641,
+    "yMin": 0.4619140625,
+    "yMax": 0.463134765625
+  },
+  "geoBounds": {
+    "north": 13.581921,
+    "south": 13.154376,
+    "west": 121.775894,
+    "east": 122.215347,
+    "centerLat": 13.368243,
+    "centerLon": 121.995621
+  },
+  "groundDimensionsMeters": {
+    "width": 47594.2,
+    "height": 47594.2
+  }
+}

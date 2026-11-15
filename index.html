@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Marinduque 3D — Interactive Terrain &amp; Travel Atlas</title>
+    <meta
+      name="description"
+      content="Mobile-first interactive 3D relief and tourist guide map of Marinduque, Philippines built from real AWS Terrain Tiles."
+    />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="app">
+      <!-- 3D WebGL viewport -->
+      <canvas id="scene-canvas" aria-label="Interactive 3D terrain map of Marinduque"></canvas>
+
+      <!-- Projected pins, SVG stems & municipality labels -->
+      <div id="map-overlay" aria-label="Map landmarks and municipalities"></div>
+
+      <!-- Loading preloader curtain -->
+      <div id="loading-screen" class="loading-screen" role="status" aria-live="polite">
+        <div class="loading-inner">
+          <div class="loading-emblem" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="21" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.2" />
+              <circle class="loading-ring" cx="24" cy="24" r="21" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round" />
+              <path d="M24 12.5c-4.4 0-8 3.6-8 8 0 6.2 8 15 8 15s8-8.8 8-15c0-4.4-3.6-8-8-8z" stroke="currentColor" stroke-width="1.5" />
+              <circle cx="24" cy="20.5" r="2.6" fill="#f59e0b" />
+            </svg>
+          </div>
+          <p class="loading-eyebrow">Heart of the Philippines</p>
+          <p class="loading-title">Marinduque</p>
+          <div class="loading-bar-track" aria-hidden="true">
+            <div id="loading-bar-fill" class="loading-bar-fill"></div>
+          </div>
+          <p id="loading-status" class="loading-status">Fetching elevation data…</p>
+        </div>
+      </div>
+
+      <!-- Top HUD bar: Brand + Category Filters + Top Picks Tour CTA -->
+      <header class="hud-top">
+        <div class="brand-card">
+          <h1 class="brand-title">Marinduque</h1>
+          <p class="brand-subtitle">Real Relief &amp; Travel Atlas</p>
+        </div>
+
+        <nav id="filter-bar" class="filter-bar" aria-label="Spot category filters">
+          <button type="button" class="filter-chip is-active" data-filter="all" aria-pressed="true">
+            <span>All</span>
+            <span class="chip-count" data-count-for="all">9</span>
+          </button>
+          <button type="button" class="filter-chip" data-filter="Beaches & Islands" aria-pressed="false">
+            <span>Beaches &amp; Islands</span>
+            <span class="chip-count" data-count-for="Beaches & Islands">4</span>
+          </button>
+          <button type="button" class="filter-chip" data-filter="Peaks & Nature" aria-pressed="false">
+            <span>Peaks &amp; Nature</span>
+            <span class="chip-count" data-count-for="Peaks & Nature">3</span>
+          </button>
+          <button type="button" class="filter-chip" data-filter="Heritage & Events" aria-pressed="false">
+            <span>Heritage &amp; Events</span>
+            <span class="chip-count" data-count-for="Heritage & Events">2</span>
+          </button>
+        </nav>
+
+        <button id="tour-toggle-btn" type="button" class="tour-cta" aria-pressed="false">
+          <svg class="tour-cta-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <polygon points="5.5,3.5 14.5,9 5.5,14.5" fill="currentColor" />
+          </svg>
+          <span>Top Picks Tour</span>
+        </button>
+      </header>
+
+      <!-- Active Top Picks Tour dock -->
+      <section id="tour-dock" class="tour-dock" aria-label="Guided Top Picks Tour controls" hidden>
+        <div class="tour-progress-track" aria-hidden="true">
+          <div id="tour-progress-fill" class="tour-progress-fill"></div>
+        </div>
+        <div class="tour-dock-inner">
+          <div class="tour-meta">
+            <span class="tour-kicker">Top Picks Tour</span>
+            <span id="tour-step-label" class="tour-step-label">Stop 1 of 6</span>
+          </div>
+          <div class="tour-controls">
+            <button id="tour-prev-btn" type="button" class="tour-btn" aria-label="Previous tour stop" title="Previous stop">
+              <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L6 9l5 5"/></svg>
+            </button>
+            <button id="tour-play-btn" type="button" class="tour-btn is-primary" aria-label="Pause auto-advance" title="Pause or resume auto tour">
+              <svg id="tour-play-icon" viewBox="0 0 18 18" fill="currentColor"><rect x="4.5" y="4" width="3.2" height="10" rx="1"/><rect x="10.3" y="4" width="3.2" height="10" rx="1"/></svg>
+            </button>
+            <button id="tour-next-btn" type="button" class="tour-btn" aria-label="Next tour stop" title="Next stop">
+              <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l5 5-5 5"/></svg>
+            </button>
+            <button id="tour-exit-btn" type="button" class="tour-exit-btn" aria-label="Exit guided tour">
+              Exit
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Floating terrain exaggeration & map view controls -->
+      <aside class="hud-controls" aria-label="Terrain controls">
+        <div class="control-card">
+          <div class="control-row">
+            <label for="exaggeration-slider" class="control-label">
+              <span>Relief Exaggeration</span>
+              <output id="exaggeration-value" for="exaggeration-slider">2.6×</output>
+            </label>
+            <input
+              id="exaggeration-slider"
+              type="range"
+              min="1.0"
+              max="6.0"
+              step="0.1"
+              value="2.6"
+            />
+          </div>
+
+          <div class="control-actions">
+            <div class="elevation-legend" aria-label="Elevation color key">
+              <span class="legend-item"><i class="swatch swatch-sand"></i>Coast</span>
+              <span class="legend-item"><i class="swatch swatch-green"></i>Lowland</span>
+              <span class="legend-item"><i class="swatch swatch-forest"></i>Highland</span>
+              <span class="legend-item"><i class="swatch swatch-rock"></i>Peak</span>
+            </div>
+            <div class="action-buttons">
+              <button
+                id="labels-toggle-btn"
+                type="button"
+                class="icon-btn is-active"
+                aria-pressed="true"
+                title="Toggle town labels"
+              >
+                Towns
+              </button>
+              <button id="reset-view-btn" type="button" class="icon-btn" title="Reset camera view">
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Responsive Spot Info Card (Bottom sheet on mobile, right side panel on desktop) -->
+      <aside
+        id="spot-sheet"
+        class="spot-sheet"
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby="spot-sheet-title"
+        hidden
+      >
+        <div id="spot-sheet-handle" class="sheet-handle-zone" aria-hidden="true">
+          <span class="sheet-handle-pill"></span>
+        </div>
+
+        <div class="spot-hero">
+          <img id="spot-photo" class="spot-photo" src="" alt="" decoding="async" />
+          <div class="spot-hero-scrim" aria-hidden="true"></div>
+          <button id="spot-close-btn" type="button" class="sheet-close-btn" aria-label="Close spot details">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M4.5 4.5l9 9M13.5 4.5l-9 9" />
+            </svg>
+          </button>
+          <div class="spot-hero-badges">
+            <span id="spot-category-label" class="hero-tag"></span>
+            <span id="spot-featured-badge" class="hero-tag is-gold" hidden>Top Pick</span>
+          </div>
+          <span id="spot-elev-badge" class="hero-elev"></span>
+        </div>
+
+        <div class="spot-body">
+          <div class="spot-meta-row">
+            <span id="spot-municipality"></span>
+            <span class="meta-dot" aria-hidden="true">·</span>
+            <span id="spot-coords" class="spot-coords"></span>
+          </div>
+          <h2 id="spot-sheet-title" class="spot-title"></h2>
+          <p id="spot-description" class="spot-description"></p>
+
+          <dl class="spot-facts">
+            <div class="spot-fact">
+              <dt>
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 13V6.5A2.5 2.5 0 0 1 5.5 4h5A2.5 2.5 0 0 1 13 6.5V13M5 10h6M5.5 13v1M10.5 13v1M4.5 7h7"/>
+                </svg>
+                <span>How to get there</span>
+              </dt>
+              <dd id="spot-getting-there"></dd>
+            </div>
+            <div class="spot-fact">
+              <dt>
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="8" cy="8" r="3"/>
+                  <path d="M8 2v1.2M8 12.8V14M2 8h1.2M12.8 8H14M3.8 3.8l.9.9M11.3 11.3l.9.9M12.2 3.8l-.9.9M4.7 11.3l-.9.9"/>
+                </svg>
+                <span>Best time to visit</span>
+              </dt>
+              <dd id="spot-best-time"></dd>
+            </div>
+          </dl>
+
+          <p id="spot-photo-credit" class="spot-credit"></p>
+        </div>
+
+        <div class="spot-nav-footer">
+          <button id="spot-prev-btn" type="button" class="sheet-nav-btn">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M10 3.5L5.5 8 10 12.5" />
+            </svg>
+            <span>Previous</span>
+          </button>
+          <span id="spot-index-counter" class="sheet-counter">1 / 9</span>
+          <button id="spot-next-btn" type="button" class="sheet-nav-btn">
+            <span>Next</span>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 3.5L10.5 8 6 12.5" />
+            </svg>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Footer data attribution -->
+      <footer class="hud-footer">
+        <p>
+          Terrain data:
+          <a
+            href="https://registry.opendata.aws/terrain-tiles/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            AWS Terrain Tiles
+          </a>
+          (Mapzen Terrarium · SRTM / GMTED2010)
+        </p>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
