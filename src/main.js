@@ -102,14 +102,31 @@ async function init() {
       pinsLayer.setLabelsVisible(showLabels);
     });
 
+    const DEFAULT_EXAGGERATION = 2.6;
+
     resetBtn.addEventListener('click', () => {
       uiCtrl.stopTour();
       uiCtrl.closePlacesDrawer({ immediate: true });
+      uiCtrl.closeNotesDrawer({ immediate: true });
       uiCtrl.closeSpot();
+      uiCtrl.setActiveFilter('all');
+      uiCtrl.resetDirectoryFilters();
+
+      slider.value = String(DEFAULT_EXAGGERATION);
+      terrain.setExaggeration(DEFAULT_EXAGGERATION);
+      sliderOutput.textContent = `${DEFAULT_EXAGGERATION.toFixed(1)}×`;
+      syncSliderTrack(slider);
+      pinsLayer.syncHeights();
+
+      showLabels = true;
+      labelsBtn.classList.add('is-active');
+      labelsBtn.setAttribute('aria-pressed', 'true');
+      pinsLayer.setLabelsVisible(true);
+
       sceneCtrl.resetView();
     });
 
-    // Dismiss active detail card or places drawer when user taps cleanly on ocean / terrain without dragging
+    // Dismiss active detail card or drawers when user taps cleanly on ocean / terrain without dragging
     let downX = 0;
     let downY = 0;
     canvas.addEventListener('pointerdown', (e) => {
@@ -121,6 +138,9 @@ async function init() {
       if (moved < 6) {
         if (uiCtrl.isDrawerOpen()) {
           uiCtrl.closePlacesDrawer();
+        }
+        if (uiCtrl.isNotesOpen()) {
+          uiCtrl.closeNotesDrawer();
         }
         if (uiCtrl.getActiveSpotId()) {
           uiCtrl.stopTour();

@@ -88,6 +88,22 @@
             <span id="places-count-badge" class="places-badge">16</span>
           </button>
 
+          <button
+            id="notes-toggle-btn"
+            type="button"
+            class="places-btn notes-toggle-btn"
+            aria-expanded="false"
+            aria-controls="notes-drawer"
+            title="Visitor travel guide &amp; personal trip notes"
+          >
+            <svg class="places-btn-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="4" y="2.5" width="10" height="13" rx="2" />
+              <path d="M6.8 6.3h4.4M6.8 9.2h4.4M6.8 12.1h2.8" />
+            </svg>
+            <span class="places-btn-text">Notes</span>
+            <span id="notes-count-badge" class="places-badge" hidden>0</span>
+          </button>
+
           <button id="tour-toggle-btn" type="button" class="tour-cta" aria-pressed="false">
             <svg class="tour-cta-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
               <polygon points="5.5,3.5 14.5,9 5.5,14.5" fill="currentColor" />
@@ -148,6 +164,141 @@
         </div>
 
         <div id="places-list" class="places-list" role="list"></div>
+      </aside>
+
+      <!-- Visitor Notes Drawer (Travel Essentials + Personal Trip Notes) -->
+      <aside
+        id="notes-drawer"
+        class="notes-drawer"
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby="notes-drawer-title"
+        hidden
+      >
+        <div class="places-drawer-header">
+          <div>
+            <h2 id="notes-drawer-title" class="places-drawer-title">Visitor Notes</h2>
+            <p class="places-drawer-sub">Travel essentials &amp; your saved reminders</p>
+          </div>
+          <button id="notes-close-btn" type="button" class="drawer-close-btn" aria-label="Close visitor notes">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M4.5 4.5l9 9M13.5 4.5l-9 9" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="notes-tabs" role="tablist" aria-label="Visitor notes sections">
+          <button
+            id="notes-tab-guide"
+            type="button"
+            class="notes-tab is-active"
+            role="tab"
+            aria-selected="true"
+            aria-controls="notes-panel-guide"
+            data-notes-tab="guide"
+          >
+            Travel Guide
+          </button>
+          <button
+            id="notes-tab-personal"
+            type="button"
+            class="notes-tab"
+            role="tab"
+            aria-selected="false"
+            aria-controls="notes-panel-personal"
+            data-notes-tab="personal"
+          >
+            <span>My Notes</span>
+            <span id="notes-tab-count" class="notes-tab-count" hidden>0</span>
+          </button>
+        </div>
+
+        <div id="notes-panel-guide" class="notes-panel" role="tabpanel" aria-labelledby="notes-tab-guide">
+          <div class="notes-guide-list">
+            <article class="guide-note-card">
+              <header class="guide-note-head">
+                <span class="guide-note-kicker">Ferries &amp; Gateways</span>
+                <button type="button" class="guide-jump-btn" data-jump-spot="biglang-awa-shrine">Balanacan Port</button>
+              </header>
+              <p>Most visitors arrive by RORO ferry (~3–4 hrs) from Dalahican Port (Lucena) into <strong>Balanacan Port</strong> in Mogpog. Boats from General Luna, Quezon serve northeast <strong>Maniwaya Island</strong>. <span class="todo-note">TODO: confirm current sailing schedules before departure.</span></p>
+            </article>
+
+            <article class="guide-note-card">
+              <header class="guide-note-head">
+                <span class="guide-note-kicker">Getting Around</span>
+                <button type="button" class="guide-jump-btn" data-jump-spot="boac-cathedral">Boac Plaza</button>
+              </header>
+              <p>The ~110 km circumferential highway circles all six towns. Inter-town jeepneys and UV Express vans generally slow down after <strong>5:00–6:00 PM</strong>—negotiate round-trip tricycle rates ahead for inland falls, caves, and mountain jump-offs.</p>
+            </article>
+
+            <article class="guide-note-card">
+              <header class="guide-note-head">
+                <span class="guide-note-kicker">Cash, Power &amp; Signal</span>
+                <button type="button" class="guide-jump-btn" data-jump-spot="maniwaya-island">Maniwaya</button>
+              </header>
+              <p>Withdraw plenty of <strong>PHP cash</strong> in Boac or Santa Cruz Centro before heading to beaches or hills. Outer islands (Maniwaya, Tres Reyes), caves, and cascades have no ATMs and intermittent mobile data—bring a charged power bank.</p>
+            </article>
+
+            <article class="guide-note-card">
+              <header class="guide-note-head">
+                <span class="guide-note-kicker">Tides, Hikes &amp; Springs</span>
+                <button type="button" class="guide-jump-btn" data-jump-spot="palad-sandbar">Palad Sandbar</button>
+              </header>
+              <p><strong>Palad Sandbar</strong> emerges only at low tide (zero shade—pack water, hat, aqua shoes). Climb <strong>Mt. Malindig</strong> &amp; visit <strong>Tres Reyes</strong> in calm Dec–May mornings, hire barangay guides for caves, and remove silver rings at <strong>Malbog Spring</strong>.</p>
+            </article>
+
+            <article class="guide-note-card">
+              <header class="guide-note-head">
+                <span class="guide-note-kicker">Holy Week · Moriones</span>
+                <button type="button" class="guide-jump-btn" data-jump-spot="moriones-festival">Boac &amp; Mogpog</button>
+              </header>
+              <p>During the week-long Lenten <strong>Moriones Festival</strong>, book ferry vehicles and stays weeks ahead. Street pageants concentrate around Boac and Mogpog plazas—stay close to town centers if commuting without private transport.</p>
+            </article>
+
+            <article class="guide-note-card">
+              <header class="guide-note-head">
+                <span class="guide-note-kicker">3D Map Controls</span>
+              </header>
+              <p>Drag to orbit, pinch or scroll to zoom, and use a two-finger drag (or right-drag) to pan. Adjust <strong>Relief Exaggeration</strong> (1×–6×) to study coastal coves vs. ridges, tap <strong>Reset</strong> anytime to return home, or open any spot to save custom notes.</p>
+            </article>
+          </div>
+        </div>
+
+        <div id="notes-panel-personal" class="notes-panel" role="tabpanel" aria-labelledby="notes-tab-personal" hidden>
+          <form id="note-composer" class="note-composer">
+            <label for="note-spot-select" class="sr-only">Destination for note</label>
+            <select id="note-spot-select" class="note-spot-select">
+              <option value="general">Island-wide (General)</option>
+            </select>
+
+            <textarea
+              id="note-text-input"
+              class="note-textarea"
+              rows="2"
+              maxlength="300"
+              placeholder="Write a visitor note, ferry check, boat contact, or packing reminder…"
+              aria-label="Personal visitor note"
+            ></textarea>
+
+            <div class="note-quick-chips" aria-label="Quick note templates">
+              <button type="button" class="note-quick-chip" data-note-template="Confirm morning Lucena–Balanacan RORO schedule &amp; port fee">+ Ferry check</button>
+              <button type="button" class="note-quick-chip" data-note-template="Withdraw extra PHP cash in Boac (no ATMs on outer islets)">+ Bring PHP cash</button>
+              <button type="button" class="note-quick-chip" data-note-template="Pack aqua shoes, reef-safe sunscreen, drybag &amp; 2L water">+ Island gear</button>
+            </div>
+
+            <div class="note-composer-footer">
+              <span class="note-storage-hint">Saved in this browser</span>
+              <button id="note-save-btn" type="submit" class="note-save-btn">Save Note</button>
+            </div>
+          </form>
+
+          <div id="notes-personal-list" class="notes-personal-list" role="list"></div>
+
+          <div id="notes-personal-footer" class="notes-personal-footer" hidden>
+            <span id="notes-personal-summary" class="notes-personal-summary"></span>
+            <button id="notes-clear-btn" type="button" class="notes-clear-btn">Clear all</button>
+          </div>
+        </div>
       </aside>
 
       <!-- Active Top Picks Tour dock -->
@@ -212,7 +363,7 @@
               >
                 Towns
               </button>
-              <button id="reset-view-btn" type="button" class="icon-btn" title="Reset camera view">
+              <button id="reset-view-btn" type="button" class="icon-btn" title="Reset camera framing, filters, and terrain exaggeration">
                 Reset
               </button>
             </div>
@@ -334,6 +485,19 @@
               <dd id="spot-tips"></dd>
             </div>
           </dl>
+
+          <section id="spot-notes-section" class="spot-notes-section" aria-label="Your trip notes for this spot">
+            <div class="spot-notes-header">
+              <h3 class="spot-section-kicker">Your Trip Notes</h3>
+              <button id="spot-add-note-btn" type="button" class="spot-utility-btn spot-add-note-btn">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+                  <path d="M8 3.2v9.6M3.2 8h9.6" />
+                </svg>
+                <span>Add note</span>
+              </button>
+            </div>
+            <div id="spot-notes-list" class="spot-notes-list"></div>
+          </section>
 
           <p id="spot-photo-credit" class="spot-credit"></p>
         </div>

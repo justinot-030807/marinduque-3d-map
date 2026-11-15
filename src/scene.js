@@ -147,11 +147,24 @@ export function createSceneController(canvas) {
   let activeTween = null;
   const userInteractCallbacks = [];
 
+  function clearControlsInertia() {
+    const curPos = camera.position.clone();
+    const curTarget = controls.target.clone();
+    const prevDamping = controls.enableDamping;
+    controls.enableDamping = false;
+    controls.update();
+    controls.enableDamping = prevDamping;
+    camera.position.copy(curPos);
+    controls.target.copy(curTarget);
+    camera.lookAt(controls.target);
+  }
+
   function cancelCameraTween() {
     if (activeTween) {
       activeTween.kill();
       activeTween = null;
     }
+    controls.enableDamping = true;
   }
 
   function onUserInteract(cb) {
@@ -167,10 +180,17 @@ export function createSceneController(canvas) {
 
   function animateCameraTo(destPosition, destTarget, { duration = 1.2, ease = 'power3.inOut', onComplete } = {}) {
     cancelCameraTween();
+    clearControlsInertia();
+    controls.enableDamping = false;
+
     activeTween = gsap.timeline({
       defaults: { duration, ease },
       onComplete: () => {
         activeTween = null;
+        camera.position.copy(destPosition);
+        controls.target.copy(destTarget);
+        controls.update();
+        controls.enableDamping = true;
         onComplete?.();
       },
     });
@@ -197,7 +217,7 @@ export function createSceneController(canvas) {
 
   function resetView(duration = 1.15) {
     const hero = getHeroFraming();
-    animateCameraTo(hero.position, hero.target, { duration, ease: 'power3.inOut' });
+    return animateCameraTo(hero.position, hero.target, { duration, ease: 'power3.inOut' });
   }
 
   /**

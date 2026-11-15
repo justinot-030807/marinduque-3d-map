@@ -1,6 +1,46 @@
 import gsap from 'gsap';
 
 const TOUR_STOP_DURATION_SEC = 7.5;
+const NOTES_STORAGE_KEY = 'marinduque3d.visitorNotes.v1';
+
+function loadSavedNotes() {
+  try {
+    const raw = window.localStorage.getItem(NOTES_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item) => item && typeof item.text === 'string' && item.text.trim().length > 0)
+      .map((item) => ({
+        id: String(item.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`),
+        spotId: typeof item.spotId === 'string' ? item.spotId : 'general',
+        text: item.text.trim().slice(0, 300),
+        done: Boolean(item.done),
+        createdAt: Number(item.createdAt) || Date.now(),
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function persistNotes(notes) {
+  try {
+    window.localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
+  } catch {
+    // Ignore storage quota or private browsing write errors gracefully
+  }
+}
+
+function formatNoteDate(timestamp) {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+    }).format(new Date(timestamp));
+  } catch {
+    return 'Saved';
+  }
+}
 
 function formatCoords(lat, lon) {
   const latStr = `${Math.abs(lat).toFixed(3)}° ${lat >= 0 ? 'N' : 'S'}`;
@@ -57,6 +97,25 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
   const placesList = document.getElementById('places-list');
   const placesSummary = document.getElementById('places-summary');
 
+  // Visitor Notes drawer DOM
+  const notesToggleBtn = document.getElementById('notes-toggle-btn');
+  const notesCountBadge = document.getElementById('notes-count-badge');
+  const notesDrawer = document.getElementById('notes-drawer');
+  const notesCloseBtn = document.getElementById('notes-close-btn');
+  const notesTabBtns = Array.from(document.querySelectorAll('[data-notes-tab]'));
+  const notesTabCount = document.getElementById('notes-tab-count');
+  const notesPanelGuide = document.getElementById('notes-panel-guide');
+  const notesPanelPersonal = document.getElementById('notes-panel-personal');
+  const noteComposerForm = document.getElementById('note-composer');
+  const noteSpotSelect = document.getElementById('note-spot-select');
+  const noteTextInput = document.getElementById('note-text-input');
+  const noteQuickChipBtns = Array.from(document.querySelectorAll('[data-note-template]'));
+  const notesPersonalList = document.getElementById('notes-personal-list');
+  const notesPersonalFooter = document.getElementById('notes-personal-footer');
+  const notesPersonalSummary = document.getElementById('notes-personal-summary');
+  const notesClearBtn = document.getElementById('notes-clear-btn');
+  const guideJumpBtns = Array.from(document.querySelectorAll('[data-jump-spot]'));
+
   // Tour dock DOM
   const tourDock = document.getElementById('tour-dock');
   const tourStepLabel = document.getElementById('tour-step-label');
@@ -92,6 +151,8 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
   const bestTimeEl = document.getElementById('spot-best-time');
   const tipsRowEl = document.getElementById('spot-tips-row');
   const tipsEl = document.getElementById('spot-tips');
+  const spotAddNoteBtn = document.getElementById('spot-add-note-btn');
+  const spotNotesList = document.getElementById('spot-notes-list');
   const creditEl = document.getElementById('spot-photo-credit');
   const prevSpotBtn = document.getElementById('spot-prev-btn');
   const nextSpotBtn = document.getElementById('spot-next-btn');
@@ -104,6 +165,9 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
   let drawerOpen = false;
   let drawerMuni = 'all';
   let drawerQuery = '';
+  let notesOpen = false;
+  let notesTab = 'guide';
+  let visitorNotes = loadSavedNotes();
   let tourActive = false;
   let tourPlaying = false;
   let tourIndex = 0;
@@ -128,6 +192,17 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
   }
   syncCategoryCounts();
 
+  function populateNoteSpotSelect() {
+    if (!noteSpotSelect) return;
+    for (const s of spots) {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = `${s.name} (${s.municipality})`;
+      noteSpotSelect.appendChild(opt);
+    }
+  }
+  populateNoteSpotSelect();
+
   function setActiveFilter(category) {
     activeFilter = category;
     for (const btn of filterBtns) {
@@ -143,6 +218,19 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
       if (current && current.category !== category) {
         closeSpot();
       }
+    }
+  }
+
+  function resetDirectoryFilters() {
+    drawerMuni = 'all';
+    drawerQuery = '';
+    if (placesSearch) placesSearch.value = '';
+    if (placesSearchClear) placesSearchClear.hidden = true;
+    for (const btn of placesMuniBtns) {
+      btn.classList.toggle('is-active', btn.dataset.muni === 'all');
+    }
+    if (drawerOpen) {
+      renderPlacesDirectory();
     }
   }
 
@@ -272,6 +360,10 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
     if (drawerOpen) return;
     drawerOpen = true;
 
+    if (notesOpen) {
+      closeNotesDrawer({ immediate: true });
+    }
+
     // On narrow mobile screens or desktop right column, dismiss open detail card cleanly so drawers never stack
     if (!sheet.hidden) {
       if (tourActive) stopTour();
@@ -318,6 +410,281 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
       },
     });
   }
+
+  // =========================================================================
+  // Visitor Notes Drawer & Per-Spot Notes
+  // =========================================================================
+  function getSpotById(spotId) {
+    if (!spotId || spotId === 'general') return null;
+    return spots.find((s) => s.id === spotId) || null;
+  }
+
+  function syncNotesBadges() {
+    const total = visitorNotes.length;
+    if (notesCountBadge) {
+      notesCountBadge.hidden = total === 0;
+      notesCountBadge.textContent = String(total);
+    }
+    if (notesTabCount) {
+      notesTabCount.hidden = total === 0;
+      notesTabCount.textContent = String(total);
+    }
+  }
+
+  function createPersonalNoteCard(note, { compact = false } = {}) {
+    const item = document.createElement('div');
+    item.className = `visitor-note-item${note.done ? ' is-done' : ''}${compact ? ' is-compact' : ''}`;
+    item.setAttribute('role', 'listitem');
+
+    const checkBtn = document.createElement('button');
+    checkBtn.type = 'button';
+    checkBtn.className = 'visitor-note-check';
+    checkBtn.setAttribute('aria-label', note.done ? 'Mark note active' : 'Mark note done');
+    checkBtn.setAttribute('aria-pressed', note.done ? 'true' : 'false');
+    checkBtn.innerHTML = note.done
+      ? '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.4l3 3 6-6.2"/></svg>'
+      : '';
+    checkBtn.addEventListener('click', () => {
+      toggleVisitorNoteDone(note.id);
+    });
+
+    const body = document.createElement('div');
+    body.className = 'visitor-note-body';
+
+    const textEl = document.createElement('p');
+    textEl.className = 'visitor-note-text';
+    textEl.textContent = note.text;
+    body.appendChild(textEl);
+
+    if (!compact) {
+      const meta = document.createElement('div');
+      meta.className = 'visitor-note-meta';
+
+      const targetSpot = getSpotById(note.spotId);
+      if (targetSpot) {
+        const jumpBtn = document.createElement('button');
+        jumpBtn.type = 'button';
+        jumpBtn.className = 'note-spot-link';
+        jumpBtn.textContent = targetSpot.name;
+        jumpBtn.addEventListener('click', () => {
+          if (activeFilter !== 'all' && targetSpot.category !== activeFilter) {
+            setActiveFilter('all');
+          }
+          closeNotesDrawer({ immediate: true });
+          selectSpot(targetSpot.id);
+        });
+        meta.appendChild(jumpBtn);
+      } else {
+        const scopeBadge = document.createElement('span');
+        scopeBadge.className = 'note-scope-pill';
+        scopeBadge.textContent = 'Island-wide';
+        meta.appendChild(scopeBadge);
+      }
+
+      const dateSpan = document.createElement('span');
+      dateSpan.className = 'visitor-note-date';
+      dateSpan.textContent = formatNoteDate(note.createdAt);
+      meta.appendChild(dateSpan);
+
+      body.appendChild(meta);
+    }
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'visitor-note-delete';
+    delBtn.setAttribute('aria-label', 'Delete note');
+    delBtn.title = 'Delete note';
+    delBtn.innerHTML =
+      '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7"/></svg>';
+    delBtn.addEventListener('click', () => {
+      deleteVisitorNote(note.id);
+    });
+
+    item.appendChild(checkBtn);
+    item.appendChild(body);
+    item.appendChild(delBtn);
+    return item;
+  }
+
+  function renderPersonalNotes() {
+    syncNotesBadges();
+    if (!notesPersonalList) return;
+    notesPersonalList.textContent = '';
+
+    if (!visitorNotes.length) {
+      if (notesPersonalFooter) notesPersonalFooter.hidden = true;
+      const empty = document.createElement('div');
+      empty.className = 'notes-empty-state';
+      empty.innerHTML = `
+        <p class="notes-empty-title">No trip notes yet</p>
+        <p class="notes-empty-copy">Jot down ferry schedules, boatman contacts, tide windows, or pick a quick template above.</p>
+      `;
+      notesPersonalList.appendChild(empty);
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    for (const note of visitorNotes) {
+      fragment.appendChild(createPersonalNoteCard(note));
+    }
+    notesPersonalList.appendChild(fragment);
+
+    if (notesPersonalFooter && notesPersonalSummary) {
+      const doneCount = visitorNotes.filter((n) => n.done).length;
+      notesPersonalSummary.textContent = doneCount
+        ? `${visitorNotes.length} ${visitorNotes.length === 1 ? 'note' : 'notes'} · ${doneCount} checked`
+        : `${visitorNotes.length} saved ${visitorNotes.length === 1 ? 'note' : 'notes'}`;
+      notesPersonalFooter.hidden = false;
+    }
+  }
+
+  function renderSpotNotes(spotId) {
+    if (!spotNotesList) return;
+    spotNotesList.textContent = '';
+    const matching = visitorNotes.filter((n) => n.spotId === spotId);
+
+    if (!matching.length) {
+      const hint = document.createElement('p');
+      hint.className = 'spot-notes-empty';
+      hint.textContent = 'No saved notes for this stop yet.';
+      spotNotesList.appendChild(hint);
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    for (const note of matching) {
+      fragment.appendChild(createPersonalNoteCard(note, { compact: true }));
+    }
+    spotNotesList.appendChild(fragment);
+  }
+
+  function refreshNotesUI() {
+    renderPersonalNotes();
+    if (activeSpotId) {
+      renderSpotNotes(activeSpotId);
+    }
+  }
+
+  function addVisitorNote(text, spotId = 'general') {
+    const clean = text.trim().slice(0, 300);
+    if (!clean) return false;
+    const validSpotId = spotId && getSpotById(spotId) ? spotId : 'general';
+    const nextNote = {
+      id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+      spotId: validSpotId,
+      text: clean,
+      done: false,
+      createdAt: Date.now(),
+    };
+    visitorNotes = [nextNote, ...visitorNotes];
+    persistNotes(visitorNotes);
+    refreshNotesUI();
+    return true;
+  }
+
+  function toggleVisitorNoteDone(noteId) {
+    visitorNotes = visitorNotes.map((n) => (n.id === noteId ? { ...n, done: !n.done } : n));
+    persistNotes(visitorNotes);
+    refreshNotesUI();
+  }
+
+  function deleteVisitorNote(noteId) {
+    visitorNotes = visitorNotes.filter((n) => n.id !== noteId);
+    persistNotes(visitorNotes);
+    refreshNotesUI();
+  }
+
+  function clearAllVisitorNotes() {
+    if (!visitorNotes.length) return;
+    visitorNotes = [];
+    persistNotes(visitorNotes);
+    refreshNotesUI();
+  }
+
+  function setNotesTab(nextTab) {
+    notesTab = nextTab === 'personal' ? 'personal' : 'guide';
+    for (const btn of notesTabBtns) {
+      const isMatch = btn.dataset.notesTab === notesTab;
+      btn.classList.toggle('is-active', isMatch);
+      btn.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+    }
+    if (notesPanelGuide) notesPanelGuide.hidden = notesTab !== 'guide';
+    if (notesPanelPersonal) notesPanelPersonal.hidden = notesTab !== 'personal';
+  }
+
+  function openNotesDrawer({ tab, spotId, focusInput = false } = {}) {
+    if (drawerOpen) {
+      closePlacesDrawer({ immediate: true });
+    }
+    if (!sheet.hidden) {
+      if (tourActive) stopTour();
+      closeSpot();
+    }
+
+    if (tab) {
+      setNotesTab(tab);
+    } else if (!notesOpen && visitorNotes.length > 0 && notesTab === 'guide') {
+      // Keep default guide active unless caller overrides; badges already highlight saved notes
+    }
+
+    if (spotId && noteSpotSelect) {
+      noteSpotSelect.value = getSpotById(spotId) ? spotId : 'general';
+    }
+
+    renderPersonalNotes();
+
+    if (!notesOpen) {
+      notesOpen = true;
+      if (notesToggleBtn) {
+        notesToggleBtn.classList.add('is-active');
+        notesToggleBtn.setAttribute('aria-expanded', 'true');
+      }
+      document.body.classList.add('has-notes-open');
+      notesDrawer.hidden = false;
+      gsap.killTweensOf(notesDrawer);
+      gsap.fromTo(
+        notesDrawer,
+        { opacity: 0, y: -10 },
+        { opacity: 1, y: 0, duration: 0.24, ease: 'power2.out', clearProps: 'transform' },
+      );
+    }
+
+    if (focusInput && noteTextInput) {
+      requestAnimationFrame(() => noteTextInput.focus());
+    }
+  }
+
+  function closeNotesDrawer({ immediate = false } = {}) {
+    if (!notesDrawer || (!notesOpen && notesDrawer.hidden)) return;
+    notesOpen = false;
+    if (notesToggleBtn) {
+      notesToggleBtn.classList.remove('is-active');
+      notesToggleBtn.setAttribute('aria-expanded', 'false');
+    }
+    document.body.classList.remove('has-notes-open');
+
+    if (immediate) {
+      gsap.killTweensOf(notesDrawer);
+      notesDrawer.hidden = true;
+      gsap.set(notesDrawer, { clearProps: 'all' });
+      return;
+    }
+
+    gsap.killTweensOf(notesDrawer);
+    gsap.to(notesDrawer, {
+      opacity: 0,
+      y: -8,
+      duration: 0.18,
+      ease: 'power2.in',
+      onComplete: () => {
+        notesDrawer.hidden = true;
+        gsap.set(notesDrawer, { clearProps: 'all' });
+      },
+    });
+  }
+
+  syncNotesBadges();
+  renderPersonalNotes();
 
   // =========================================================================
   // Spot Detail Content & Sheet Animation
@@ -395,6 +762,8 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
       creditEl.hidden = true;
     }
 
+    renderSpotNotes(spot.id);
+
     const list = tourActive ? featuredSpots : pinsLayer.getVisibleSpots();
     const idx = Math.max(0, list.findIndex((s) => s.id === spot.id));
     counterEl.textContent = `${idx + 1} / ${list.length}`;
@@ -414,6 +783,9 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
 
     if (drawerOpen) {
       closePlacesDrawer({ immediate: true });
+    }
+    if (notesOpen) {
+      closeNotesDrawer({ immediate: true });
     }
 
     // If user clicks a regular pin directly while tour auto-play is running, pause auto-play gracefully
@@ -556,6 +928,9 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
     if (drawerOpen) {
       closePlacesDrawer({ immediate: true });
     }
+    if (notesOpen) {
+      closeNotesDrawer({ immediate: true });
+    }
 
     tourActive = true;
     tourPlaying = true;
@@ -657,6 +1032,71 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
       renderPlacesDirectory();
     });
   }
+
+  notesToggleBtn?.addEventListener('click', () => {
+    if (notesOpen) closeNotesDrawer();
+    else openNotesDrawer();
+  });
+
+  notesCloseBtn?.addEventListener('click', () => closeNotesDrawer());
+
+  for (const btn of notesTabBtns) {
+    btn.addEventListener('click', () => {
+      setNotesTab(btn.dataset.notesTab);
+    });
+  }
+
+  for (const btn of guideJumpBtns) {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.jumpSpot;
+      const targetSpot = getSpotById(targetId);
+      if (targetSpot && activeFilter !== 'all' && targetSpot.category !== activeFilter) {
+        setActiveFilter('all');
+      }
+      closeNotesDrawer({ immediate: true });
+      if (targetId) {
+        selectSpot(targetId);
+      }
+    });
+  }
+
+  noteComposerForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!noteTextInput) return;
+    const targetSpotId = noteSpotSelect?.value || 'general';
+    const saved = addVisitorNote(noteTextInput.value, targetSpotId);
+    if (saved) {
+      noteTextInput.value = '';
+    }
+    noteTextInput.focus();
+  });
+
+  noteTextInput?.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      noteComposerForm?.requestSubmit();
+    }
+  });
+
+  for (const btn of noteQuickChipBtns) {
+    btn.addEventListener('click', () => {
+      if (!noteTextInput) return;
+      noteTextInput.value = btn.dataset.noteTemplate || '';
+      noteTextInput.focus();
+      const len = noteTextInput.value.length;
+      noteTextInput.setSelectionRange(len, len);
+    });
+  }
+
+  notesClearBtn?.addEventListener('click', () => {
+    clearAllVisitorNotes();
+  });
+
+  spotAddNoteBtn?.addEventListener('click', () => {
+    const targetSpotId = activeSpotId || 'general';
+    if (tourActive) stopTour();
+    openNotesDrawer({ tab: 'personal', spotId: targetSpotId, focusInput: true });
+  });
 
   tourToggleBtn.addEventListener('click', () => {
     if (tourActive) {
@@ -760,8 +1200,19 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
 
   // Clean keyboard navigation
   window.addEventListener('keydown', (e) => {
+    const activeEl = document.activeElement;
+    const isFormFocused =
+      activeEl === placesSearch ||
+      activeEl === noteTextInput ||
+      activeEl === noteSpotSelect ||
+      activeEl?.tagName === 'INPUT' ||
+      activeEl?.tagName === 'TEXTAREA' ||
+      activeEl?.tagName === 'SELECT';
+
     if (e.key === 'Escape') {
-      if (drawerOpen) {
+      if (notesOpen) {
+        closeNotesDrawer();
+      } else if (drawerOpen) {
         closePlacesDrawer();
       } else if (tourActive) {
         stopTour();
@@ -769,9 +1220,9 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
       } else if (!sheet.hidden) {
         closeSpot();
       }
-    } else if (e.key === 'ArrowRight' && (!sheet.hidden || tourActive) && document.activeElement !== placesSearch) {
+    } else if (e.key === 'ArrowRight' && (!sheet.hidden || tourActive) && !isFormFocused) {
       stepSpot(1);
-    } else if (e.key === 'ArrowLeft' && (!sheet.hidden || tourActive) && document.activeElement !== placesSearch) {
+    } else if (e.key === 'ArrowLeft' && (!sheet.hidden || tourActive) && !isFormFocused) {
       stepSpot(-1);
     }
   });
@@ -782,6 +1233,11 @@ export function createUIController({ spots, pinsLayer, sceneCtrl }) {
     openPlacesDrawer,
     closePlacesDrawer,
     isDrawerOpen: () => drawerOpen,
+    openNotesDrawer,
+    closeNotesDrawer,
+    isNotesOpen: () => notesOpen,
+    setActiveFilter,
+    resetDirectoryFilters,
     startTour,
     stopTour,
     getActiveFilter: () => activeFilter,

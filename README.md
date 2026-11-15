@@ -11,6 +11,7 @@ The island's silhouette and relief come from real elevation data—30 stitched z
 - **Surface-Projected Tourist Pins**: Sixteen curated destinations across all 6 municipalities convert `(lat, lon)` using the exact same Web Mercator bounds (`src/geo.js`) as the terrain generator and sit directly on the live exaggerated terrain elevation, with glowing gold markers for featured Top Picks, screen-space overlap decluttering, and `>= 48 × 48 px` mobile tap targets.
 - **Responsive Info Card & Utility Actions**: Tapping any pin triggers a GSAP camera flight (`flyTo`) framed clear of an animated **bottom sheet** on mobile (with swipe-down to dismiss) or a **right-hand side panel** on desktop, featuring trip specs (`Duration`, `Est. Cost`, `Nearest Hub`), highlights tags, getting-there directions, traveler tips, a **Copy GPS** button, and an external **Google Maps** link.
 - **Places Explorer, Filters & Top Picks Tour**: Category filter chips (`All`, `Beaches & Islands`, `Peaks & Nature`, `Heritage & Events`), a searchable **Places Explorer Drawer** filterable by municipality, toggleable town labels, an opening aerial sweep, and a guided **Top Picks Tour** across featured island gems.
+- **Visitor Notes & Travel Guide**: Built-in **Notes** drawer with essential Marinduque travel tips (ferries, inter-town transport, cash/signal, tides, and Holy Week Moriones planning) plus browser-persisted (`localStorage`) personal notes linked directly to specific destinations or overall island reminders.
 - **Mobile Performance**: Pixel ratio capped at `2`, compressed local `800×450` `.webp` imagery, and single-chunk Three.js/GSAP static build.
 
 ## Local Development
@@ -102,5 +103,5 @@ Because this is a pure static Vite application with no backend or environment se
 ## Data & Media Credits
 
 - **Elevation Data**: [AWS Open Data Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) (Mapzen Terrarium format · SRTM / GMTED2010).
-- **Photography**: Local curated spot photography sourced from Wikimedia Commons under Creative Commons licenses (credited per destination inside `spots.json`), alongside bespoke editorial previews where on-site photos remain marked `TODO`.
+- **Photography**: Local destination photography sourced from Wikimedia Commons and Flickr under open Public Domain / Creative Commons licenses (credited individually per destination inside `spots.json`, with `TODO:` flags where exact micro-site capture remains desirable).
 
